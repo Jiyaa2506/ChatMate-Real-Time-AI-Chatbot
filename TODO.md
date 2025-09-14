@@ -14,11 +14,6 @@
 - [ ] Optimize API calls with caching to reduce load
 - [ ] Add **unit tests** for chatbot functions
 
-## Documentation & Repo
-- [ ] Add detailed API usage guide in `docs/`
-- [ ] Add more **screenshots / demo video** of the chatbot in action
-- [ ] Deploy demo version on GitHub Pages or Vercel
-
 ## Stretch Goals
 - [ ] Integrate with **messaging platforms** (WhatsApp, Telegram, Slack)
 - [ ] Add a **database backend** to store user preferences/history
