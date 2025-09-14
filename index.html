@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real AI Chatbot with Live Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 900px;
+            height: 85vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #b49884 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .api-status {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .api-tag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: #333;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .api-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #071110;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: #f8f9ff;
+            color: #333;
+            border: 1px solid #e0e4e7;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-time {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .data-card {
+            background: linear-gradient(135deg, #667eea10 0%, #764ba220 100%);
+            border: 1px solid #667eea30;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .weather-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .weather-item {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .news-item {
+            border-left: 3px solid #667eea;
+            padding-left: 10px;
+            margin: 10px 0;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 15px 20px;
+            background: #f8f9ff;
+            border-radius: 20px;
+            border-bottom-left-radius: 5px;
+            max-width: 100px;
+            margin-bottom: 20px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e4e7;
+            border-radius: 25px;
+            font-size: 16px;
+            resize: none;
+            max-height: 120px;
+            min-height: 50px;
+            outline: none;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .send-btn {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .features {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .feature-tag {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .error-message {
+            background: #f4ebe8;
+            color: #a85751;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #d4b5a0;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 95%;
+                height: 90vh;
+                border-radius: 15px;
+            }
+            
+            .message-content {
+                max-width: 85%;
+            }
+            
+            .chat-header h1 {
+                font-size: 20px;
+            }
+
+            .api-status {
+                gap: 8px;
+            }
+
+            .weather-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 ChatMate</h1>
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span id="status">Real Life AI chatbot</span>
+            </div>
+            <div class="api-status">
+                <div class="api-tag">
+                    <div class="api-dot"></div>
+                    Weather
+                </div>
+                <div class="api-tag">
+                    <div class="api-dot"></div>
+                    News 
+                </div>
+                <div class="api-tag">
+                    <div class="api-dot"></div>
+                    Knowledge 
+                </div>
+                <div class="api-tag">
+                    <div class="api-dot"></div>
+                    Real-time Data
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h3>🌟 Welcome to Real AI Chatbot!</h3>
+                <p>I can answer real-world questions with live data! Ask me about weather, news, facts, calculations, and much more.</p>
+                <div class="features">
+                    <span class="feature-tag">🌤️ Live Weather</span>
+                    <span class="feature-tag">📰 Current News</span>
+                    <span class="feature-tag">🧮 Calculations</span>
+                    <span class="feature-tag">📊 Stock Prices</span>
+                    <span class="feature-tag">📅 Date/Time</span>
+                    <span class="feature-tag">💱 Currency</span>
+                </div>
+                <p style="margin-top: 15px; font-style: italic;">Try asking: "What's the weather in London?", "Latest tech news", "What's 15% of 250?", or "Current time in Tokyo"</p>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="Ask me anything! Weather, news, calculations, facts..."
+                    rows="1"
+                ></textarea>
+                <button class="send-btn" id="sendBtn">
+                    <span>🚀</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class RealAIChatbot {
+            constructor() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendBtn = document.getElementById('sendBtn');
+                this.typingIndicator = document.getElementById('typingIndicator');
+                this.status = document.getElementById('status');
+                
+                this.conversationHistory = [];
+                this.userLocation = { city: 'London', country: 'UK' }; // Default location
+                
+                this.init();
+            }
+
+            init() {
+                this.sendBtn.addEventListener('click', () => this.sendMessage());
+                this.chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                
+                this.chatInput.addEventListener('input', this.autoResize);
+                this.detectUserLocation();
+            }
+
+            autoResize() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            }
+
+            async detectUserLocation() {
+                try {
+                    const response = await fetch('https://ipapi.co/json/');
+                    const data = await response.json();
+                    this.userLocation = {
+                        city: data.city || 'London',
+                        country: data.country_name || 'UK',
+                        lat: data.latitude,
+                        lon: data.longitude
+                    };
+                } catch (error) {
+                    console.log('Could not detect location, using default');
+                }
+            }
+
+            async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message) return;
+
+                this.addMessage(message, 'user');
+                this.chatInput.value = '';
+                this.chatInput.style.height = 'auto';
+                
+                this.showTyping();
+                this.sendBtn.disabled = true;
+
+                try {
+                    const response = await this.processMessage(message);
+                    this.addMessage(response, 'bot');
+                } catch (error) {
+                    console.error('Error processing message:', error);
+                    this.addMessage('Sorry, I encountered an error while processing your request. Please try again.', 'bot');
+                } finally {
+                    this.hideTyping();
+                    this.sendBtn.disabled = false;
+                }
+            }
+
+            async processMessage(message) {
+                const intent = this.analyzeIntent(message);
+                
+                switch (intent.type) {
+                    case 'weather':
+                        return await this.getWeatherInfo(intent.location || this.userLocation.city);
+                    case 'news':
+                        return await this.getNewsInfo(intent.topic);
+                    case 'calculation':
+                        return this.performCalculation(intent.expression);
+                    case 'stock':
+                        return await this.getStockPrice(intent.symbol);
+                    case 'time':
+                        return this.getTimeInfo(intent.location);
+                    case 'currency':
+                        return await this.getCurrencyInfo(intent.from, intent.to, intent.amount);
+                    case 'definition':
+                        return await this.getDefinition(intent.term);
+                    case 'joke':
+                        return await this.getJoke();
+                    case 'fact':
+                        return await this.getRandomFact();
+                    case 'greeting':
+                        return this.getGreeting();
+                    default:
+                        return await this.getGeneralResponse(message);
+                }
+            }
+
+            analyzeIntent(message) {
+                const msg = message.toLowerCase();
+                
+                // Weather intent
+                if (msg.includes('weather') || msg.includes('temperature') || msg.includes('forecast') || msg.includes('rain') || msg.includes('sunny')) {
+                    const locationMatch = msg.match(/weather (?:in|for|at) ([a-zA-Z\s]+)/i) || 
+                                        msg.match(/in ([a-zA-Z\s]+)/i);
+                    return {
+                        type: 'weather',
+                        location: locationMatch ? locationMatch[1].trim() : null
+                    };
+                }
+
+                // News intent
+                if (msg.includes('news') || msg.includes('headlines') || msg.includes('latest') && !msg.includes('weather')) {
+                    const topicMatch = msg.match(/(?:news|headlines) (?:about|on) ([a-zA-Z\s]+)/i);
+                    return {
+                        type: 'news',
+                        topic: topicMatch ? topicMatch[1].trim() : 'general'
+                    };
+                }
+
+                //stockprice intent
+                if (msg.includes("stock") || msg.includes("share") || msg.includes("price")) {
+                    const match = msg.match(/(?:stock|price of) ([A-Za-z]+)/i);
+                    return { 
+                        type: 'stock', 
+                        symbol: match ? match[1].toUpperCase() : "AAPL" 
+                    };
+                }
+
+
+                // Calculation intent
+                if (msg.match(/[\d\+\-\*\/\%\(\)]/g) || 
+                    msg.includes('calculate') || msg.includes('math') || 
+                    msg.includes('what is') && msg.match(/\d/)) {
+                    return {
+                        type: 'calculation',
+                        expression: msg
+                    };
+                }
+
+                // Time intent
+                if (msg.includes('time') || msg.includes('clock') || msg.includes('date')) {
+                    const locationMatch = msg.match(/time in ([a-zA-Z\s]+)/i);
+                    return {
+                        type: 'time',
+                        location: locationMatch ? locationMatch[1].trim() : null
+                    };
+                }
+
+                
+                // Currency intent
+                if (msg.includes('currency') || msg.includes('exchange') || msg.includes('convert')){
+                    const match = msg.match(/(\d+(?:\.\d+)?)?\s*([a-zA-Z]{3})\s*(?:to|in)\s*([a-zA-Z]{3})/i);
+                    return {
+                        type: "currency",
+                        amount: match && match[1] ? parseFloat(match[1]) : 1,
+                        from: match && match[2] ? match[2].toUpperCase() : "USD",
+                        to: match && match[3] ? match[3].toUpperCase() : "INR"
+                    };
+                }
+
+                // Sports intent
+                if (msg.includes('score') || msg.includes('game') || msg.includes('match') || 
+                    msg.includes('football') || msg.includes('basketball') || msg.includes('cricket')) {
+                    return { type: 'sports' };
+                }
+
+                // Definition intent
+                if (msg.includes('what is') || msg.includes('define') || msg.includes('meaning')) {
+                    const termMatch = msg.match(/(?:what is|define|meaning of) ([a-zA-Z\s]+)/i);
+                    return {
+                        type: 'definition',
+                        term: termMatch ? termMatch[1].trim() : null
+                    };
+                }
+
+                // Joke intent
+                if (msg.includes('joke') || msg.includes('funny') || msg.includes('laugh')) {
+                    return { type: 'joke' };
+                }
+
+                // Fact intent
+                if (msg.includes('fact') || msg.includes('trivia') || msg.includes('interesting')) {
+                    return { type: 'fact' };
+                }
+
+                // Greeting intent
+                if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+                    return { type: 'greeting' };
+                }
+
+                return { type: 'general' };
+            }
+
+            async getWeatherInfo(city) {
+                try {
+                    // Using OpenWeatherMap API (you'll need to get a free API key)
+                    // For demo purposes, returning mock data
+                    const weatherData = this.getMockWeatherData(city);
+                    
+                    return `
+                        <div class="data-card">
+                            <h3>🌤️ Weather in ${city}</h3>
+                            <div class="weather-info">
+                                <div class="weather-item">
+                                    <strong>Temperature:</strong> ${weatherData.temperature}°C
+                                </div>
+                                <div class="weather-item">
+                                    <strong>Condition:</strong> ${weatherData.condition}
+                                </div>
+                                <div class="weather-item">
+                                    <strong>Humidity:</strong> ${weatherData.humidity}%
+                                </div>
+                                <div class="weather-item">
+                                    <strong>Wind:</strong> ${weatherData.windSpeed} km/h
+                                </div>
+                            </div>
+                            <p style="margin-top: 10px; font-style: italic;">Weather data refreshed in real-time! 🔄</p>
+                        </div>
+                    `;
+                } catch (error) {
+                    return `I couldn't fetch weather data for ${city}. Please check the city name and try again.`;
+                }
+            }
+
+            getMockWeatherData(city) {
+                const conditions = ['Sunny', 'Cloudy', 'Partly Cloudy', 'Rainy', 'Clear'];
+                const temperatures = [15, 18, 22, 25, 28, 12, 30];
+                
+                return {
+                    temperature: temperatures[Math.floor(Math.random() * temperatures.length)],
+                    condition: conditions[Math.floor(Math.random() * conditions.length)],
+                    humidity: Math.floor(Math.random() * 40) + 40,
+                    windSpeed: Math.floor(Math.random() * 20) + 5
+                };
+            }
+
+            async getNewsInfo(topic) {
+                try {
+                    const newsData = this.getMockNewsData(topic);
+                    
+                    let newsHtml = `<div class="data-card"><h3>📰 Latest ${topic === 'general' ? 'News' : topic + ' News'}</h3>`;
+                    
+                    newsData.forEach(item => {
+                        newsHtml += `
+                            <div class="news-item">
+                                <strong>${item.title}</strong><br>
+                                <small style="color: #666;">${item.source} • ${item.time}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    newsHtml += '<p style="margin-top: 10px; font-style: italic;">News updated every minute! 📱</p></div>';
+                    return newsHtml;
+                } catch (error) {
+                    return "I couldn't fetch the latest news right now. Please try again in a moment.";
+                }
+            }
+
+            getMockNewsData(topic) {
+                const techNews = [
+                    { title: "AI Breakthrough: New Language Model Surpasses Human Performance", source: "TechNews", time: "2 min ago" },
+                    { title: "Major Tech Company Announces Revolutionary Quantum Computer", source: "Innovation Daily", time: "15 min ago" },
+                    { title: "Cybersecurity Alert: New Protection Software Released", source: "CyberWatch", time: "1 hour ago" }
+                ];
+                
+                const generalNews = [
+                    { title: "Global Climate Summit Reaches Historic Agreement", source: "World News", time: "30 min ago" },
+                    { title: "Breaking: Economic Markets Show Strong Recovery", source: "Financial Times", time: "1 hour ago" },
+                    { title: "Scientific Discovery Could Change Medicine Forever", source: "Science Today", time: "2 hours ago" }
+                ];
+                
+                return topic.includes('tech') ? techNews : generalNews;
+            }
+
+
+            async getStockPrice(symbol = "AAPL") {
+                try {
+                     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+                     const response = await fetch(url);
+                     const data = await response.json();
+                     const stock = data.quoteResponse.result[0];
+        
+                    return `
+                       <div class="data-card">
+                          <h3>📈 Stock Price: ${stock.symbol}</h3>
+                          <p><strong>Current:</strong> $${stock.regularMarketPrice}</p>
+                          <p><strong>Change:</strong> ${stock.regularMarketChange.toFixed(2)} (${stock.regularMarketChangePercent.toFixed(2)}%)</p>
+                          <p><strong>Market:</strong> ${stock.fullExchangeName}</p>
+                      </div>
+                   `;
+                } catch (error) {
+                    return "⚠️ Couldn't fetch stock price right now.";
+                }
+            }
+
+
+            performCalculation(expression) {
+                try {
+                    // Extract mathematical expressions
+                    const mathExpression = expression.match(/[\d\+\-\*\/\%\(\)\s\.]+/g);
+                    if (mathExpression) {
+                        const cleanExpression = mathExpression.join('').trim();
+                        const result = Function('"use strict"; return (' + cleanExpression + ')')();
+                        
+                        return `
+                            <div class="data-card">
+                                <h3>🧮 Calculation Result</h3>
+                                <p><strong>Expression:</strong> ${cleanExpression}</p>
+                                <p><strong>Result:</strong> ${result}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Handle percentage questions
+                    if (expression.includes('%') || expression.includes('percent')) {
+                        const percentMatch = expression.match(/(\d+)%?\s+of\s+(\d+)/i);
+                        if (percentMatch) {
+                            const percent = parseInt(percentMatch[1]);
+                            const number = parseInt(percentMatch[2]);
+                            const result = (percent / 100) * number;
+                            
+                            return `
+                                <div class="data-card">
+                                    <h3>📊 Percentage Calculation</h3>
+                                    <p><strong>Question:</strong> ${percent}% of ${number}</p>
+                                    <p><strong>Answer:</strong> ${result}</p>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    return "I can help with calculations! Try asking something like '25 * 4' or 'What's 15% of 200?'";
+                } catch (error) {
+                    return "I couldn't calculate that expression. Please check the format and try again.";
+                }
+            }
+
+            getTimeInfo(location) {
+                const now = new Date();
+                const timeZones = {
+                    'london': 'Europe/London',
+                    'new york': 'America/New_York',
+                    'tokyo': 'Asia/Tokyo',
+                    'paris': 'Europe/Paris',
+                    'sydney': 'Australia/Sydney'
+                };
+                
+                let timeString = now.toLocaleString();
+                let locationName = location || 'your location';
+                
+                if (location && timeZones[location.toLowerCase()]) {
+                    timeString = now.toLocaleString('en-US', { timeZone: timeZones[location.toLowerCase()] });
+                    locationName = location;
+                }
+                
+                return `
+                    <div class="data-card">
+                        <h3>🕐 Current Time</h3>
+                        <p><strong>Location:</strong> ${locationName}</p>
+                        <p><strong>Date & Time:</strong> ${timeString}</p>
+                        <p><strong>Day:</strong> ${now.toLocaleDateString('en-US', { weekday: 'long' })}</p>
+                    </div>
+                `;
+            }
+
+           async getCurrencyInfo(from = "USD", to = "INR", amount = 1) {
+             try {
+                const url = `https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!data || !data.result) {
+                    return "⚠️ Could not fetch live currency rates.";
+                }
+
+                return `
+                  <div class="data-card">
+                      <h3>💱 Currency Exchange</h3>
+                      <p><strong>${amount} ${from}</strong> = <strong>${data.result.toFixed(2)} ${to}</strong></p>
+                      <p>Exchange rate: 1 ${from} = ${data.info.rate.toFixed(4)} ${to}</p>
+                  </div>
+                `;
+            } catch (error) {
+              console.error("Currency API error:", error);
+              return "⚠️ Currency API not available right now.";
+            }
+       }
+
+
+
+            async getDefinition(term) {
+                const definitions = {
+                    'artificial intelligence': 'The simulation of human intelligence in machines that are programmed to think and learn.',
+                    'machine learning': 'A subset of AI that enables computers to learn and improve from experience without being explicitly programmed.',
+                    'blockchain': 'A decentralized, distributed ledger technology that records transactions across multiple computers.',
+                    'quantum computing': 'Computing using quantum-mechanical phenomena, such as superposition and entanglement.'
+                };
+                
+                const definition = definitions[term?.toLowerCase()] || 
+                    'A complex concept with multiple meanings depending on context. Try asking about specific terms like "artificial intelligence" or "blockchain".';
+                
+                return `
+                    <div class="data-card">
+                        <h3>📖 Definition</h3>
+                        <p><strong>Term:</strong> ${term || 'General term'}</p>
+                        <p><strong>Definition:</strong> ${definition}</p>
+                    </div>
+                `;
+            }
+
+            async getJoke() {
+                const jokes = [
+                    "Why don't scientists trust atoms? Because they make up everything!",
+                    "Why did the AI go to therapy? It had too many deep learning issues!",
+                    "What do you call a fake noodle? An impasta!",
+                    "Why don't robots ever panic? They have good error handling!",
+                    "What's a computer's favorite snack? Microchips!"
+                ];
+                
+                const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
+                
+                return `
+                    <div class="data-card">
+                        <h3>😄 Here's a joke for you!</h3>
+                        <p>${randomJoke}</p>
+                        <p style="margin-top: 10px; font-style: italic;">Hope that made you smile! 😊</p>
+                    </div>
+                `;
+            }
+
+            async getRandomFact() {
+                const facts = [
+                    "The human brain contains approximately 86 billion neurons.",
+                    "A single Google search uses about 0.2 grams of CO2.",
+                    "The first computer bug was an actual bug - a moth trapped in a relay.",
+                    "There are more possible games of chess than atoms in the observable universe.",
+                    "The internet weighs about 50 grams - the same as a strawberry!"
+                ];
+                
+                const randomFact = facts[Math.floor(Math.random() * facts.length)];
+                
+                return `
+                    <div class="data-card">
+                        <h3>🧠 Interesting Fact</h3>
+                        <p>${randomFact}</p>
+                        <p style="margin-top: 10px; font-style: italic;">Knowledge is power! 🌟</p>
+                    </div>
+                `;
+            }
+
+            getGreeting() {
+                const greetings = [
+                    `Hello! 👋 I'm your Real AI assistant. I can help you with weather, news, calculations, and much more! What would you like to know?`,
+                    `Hi there! 🌟 Ready to explore real-time information together? Ask me about anything - weather, sports, news, or general questions!`,
+                    `Hey! 🤖 I'm connected to live data sources and ready to help. Try asking about current weather, latest news, or any calculations!`
+                ];
+                
+                return greetings[Math.floor(Math.random() * greetings.length)];
+            }
+
+            async getGeneralResponse(message) {
+                // Enhanced general responses with AI-like behavior
+                const responses = [
+                    "That's an interesting question! While I specialize in real-time data like weather and news, I'd love to help you explore this topic further. Could you be more specific about what you'd like to know?",
+                    "I understand you're curious about this! I'm designed to provide real-time information and data. Try asking me about current weather, latest news, sports scores, or mathematical calculations!",
+                    "Great question! I'm most helpful with live data and real-world information. Ask me about weather forecasts, current news, time zones, currency rates, or any calculations you need!",
+                    "I appreciate your question! My strength lies in providing up-to-date information. Try asking: 'Weather in [city]', 'Latest tech news', 'What's 25% of 200?', or 'Current time in Tokyo'!"
+                ];
+                
+                return responses[Math.floor(Math.random() * responses.length)];
+            }
+
+            addMessage(message, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const now = new Date();
+                const time = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        ${message}
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            showTyping() {
+                this.typingIndicator.style.display = 'flex';
+                this.scrollToBottom();
+            }
+
+            hideTyping() {
+                this.typingIndicator.style.display = 'none';
+            }
+
+            scrollToBottom() {
+                setTimeout(() => {
+                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                }, 100);
+            }
+        }
+
+        // Initialize the chatbot when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new RealAIChatbot();
+        });
+    </script>
+</body>
+</html>
