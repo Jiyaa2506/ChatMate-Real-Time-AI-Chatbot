@@ -1,4 +1,4 @@
-# TODO – Future Enhancements for ChatMatte
+# TODO – Future Enhancements for ChatMate
 
 ## Features to Add
 - [ ] Real-time **cryptocurrency prices** (BTC, ETH, etc.)
