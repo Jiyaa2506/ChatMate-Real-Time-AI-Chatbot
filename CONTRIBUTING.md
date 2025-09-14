@@ -1,4 +1,4 @@
-# Contributing to ChatMatte
+# Contributing to ChatMate
 
 Thanks for your interest in contributing! Please follow these steps:
 1. Fork the repo
